@@ -1,0 +1,199 @@
+  clc;
+clear all
+close all
+tic;
+strt=toc;
+function sigma = svt(T,delta,selec,rho,basis)
+
+n=16;
+
+k=size(selec);
+m=k(2);
+Y=zeros(m,1);
+X=zeros(n,n);
+Bp=Y;
+
+h=1;
+Xp=X;
+b=zeros(m,1);
+measure=zeros(n^2,1);
+for i=1:n^2
+    wm=basis(1:n,n*(i-1)+1:n*(i-1)+n);
+    measure(i)=trace(wm'*rho);
+end
+for i=1:m
+    x=selec(i);
+    b(i)=measure(x);
+end
+i=1;
+while(h>(10^(-8))&& i<200000  )
+    
+
+A=zeros(n,n);
+
+
+ for l=1:m
+        x=selec(l);
+        wm=basis(1:n,n*(x-1)+1:n*(x-1)+n);
+        t=(wm*Y(l));
+        A=A+t;
+        
+        
+    end
+   
+
+
+    [U,S,V]=svd(A);
+  % S(1,1)
+    u=zeros(n,n);
+    v=zeros(n,n);
+    s=u;
+    for g=1:n
+        if S(g,g)>T
+           s(g,g)=S(g,g)-T;
+           u(1:n,g:g)=U(1:n,g:g);
+            v(1:n,g:g)=V(1:n,g:g);
+    else
+        break;
+    end
+    end
+    X=u*s*v';
+  % plt(i)= T*trace(sqrt(X'*X))+0.5*norm(X,"fro")^2;
+    B=zeros(m,1);
+    for l=1:m
+        
+        x=selec(l);
+        wm=basis(1:n,n*(x-1)+1:n*(x-1)+n);
+        t=trace(wm'*X);
+        B(l)=t;
+        
+    end
+
+    
+    if (norm(B,"fro") > 0)
+        
+    h=norm(B-Bp,"fro")/norm(B,"fro");
+    else
+        h=1;
+    end
+     
+        
+    
+    
+   % s(1,1)
+    Xp=X;
+    Y=Y+delta*(b-B);
+    i=i+1;
+    Bp=B;
+end
+i
+sigma=X;
+end
+
+n=2;
+w=zeros(n,n^3);
+k=1;
+for i=1:2:n
+    w(i,k)=1;
+    w(i+1,k+1)=1;
+    w(i,k+n)=1;
+    w(i+1,k+1+n)=-1;
+    k=k+2*n+2;
+end
+l=n^2;
+for i=1:n-1
+    for k=i+1:n
+       w(i,k+l)=1;
+       w(k,i+l)=1;
+       w(i,k+l+n)=j;
+       w(k,i+l+n)=-j;
+       l=l+2*n;
+    end
+end
+w=w/sqrt(2);
+n=16;
+w5=zeros(n,n^3);
+i=1;
+while (i<257)
+    for l=1:4
+        for p=1:4
+            for z=1:4
+                for g=1:4
+             a=w(1:2,2*(l-1)+1:2*(l-1)+2);
+              b=w(1:2,2*(p-1)+1:2*(p-1)+2);
+               c=w(1:2,2*(z-1)+1:2*(z-1)+2);
+                d=w(1:2,2*(g-1)+1:2*(g-1)+2);
+    w5(1:n,n*(i-1)+1:n*(i-1)+n)=kron(kron(a,b),kron(c,d));
+    i=i+1;
+                end
+            end
+        end
+    end
+end
+
+%m=200;
+%T=50;
+%del=0.2;
+%m=90;
+%T=60;
+%del=3;
+m=100
+T=40
+del=2
+
+y=zeros(3,1);
+
+itr=50;
+
+fid_cutoff1=0.95;
+fid_cutoff2=0.98;
+
+
+
+
+
+t2=toc;
+
+total_iter=0;
+for i1=1:1;
+    
+    
+     for i4=1:itr
+  a=randn(n,2);
+b=randn(n,2);
+r=a+j*b;
+rho=r*r';
+rho=rho/trace(rho);
+
+                
+    
+            select=unidrnd(256,1,m);
+            select(1)=1;
+X=svt(T,del,select,rho,w5);
+
+
+fid=Fidelity(X,rho);
+ y(1,1)=y(1,1)+1;
+if (fid>=fid_cutoff1)
+    
+    y(2,1)=y(2,1)+1;
+end
+if (fid>=fid_cutoff2)
+    
+    y(3,1)=y(3,1)+1;
+end
+total_iter=total_iter+1;
+save final110.mat y;
+t1=toc;
+elapsed_time=t1-t2
+t2=t1;
+
+remaining_iter=itr-total_iter
+     end
+end
+  y
+   finish=toc;
+   total_time=finish-strt
+
+   fprintf("completed");
+   
